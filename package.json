@@ -1,0 +1,16 @@
+{
+  "name": "promos-api",
+  "version": "1.0.0",
+  "description": "API de promoções (Instant Gaming + Nuuvem) com cache de 30 minutos",
+  "main": "src/index.js",
+  "private": true,
+  "scripts": {
+    "start": "node src/index.js",
+    "dev": "node --watch src/index.js",
+    "test": "node --test"
+  },
+  "engines": { "node": ">=20" },
+  "dependencies": {
+    "cheerio": "^1.0.0"
+  }
+}

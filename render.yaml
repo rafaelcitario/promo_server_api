@@ -1,0 +1,30 @@
+# Blueprint da Render: New + > Blueprint > aponte para o repositório.
+services:
+  - type: web
+    name: promos-api
+    runtime: node
+    plan: free                  # veja o README: no plano free o cache em disco não sobrevive a reinícios
+    region: oregon              # opções: oregon, frankfurt, singapore, ohio, virginia
+    buildCommand: npm install
+    startCommand: npm start
+    healthCheckPath: /health
+    autoDeploy: true
+    envVars:
+      - key: NODE_VERSION
+        value: "22"
+      - key: API_KEY
+        generateValue: true     # a Render gera um segredo; veja em Environment
+      - key: MAX_PAGES
+        value: "300"
+      - key: CACHE_TTL_MINUTES
+        value: "30"
+      - key: CORS_ORIGINS
+        value: "*"
+      - key: WARM_ON_START
+        value: "false"
+    # Para o cache sobreviver a reinícios/deploys (exige plano pago), descomente e use DATA_DIR=/var/data:
+    # disk:
+    #   name: promos-data
+    #   mountPath: /var/data
+    #   sizeGB: 1
+    # (e adicione a env var DATA_DIR=/var/data)
