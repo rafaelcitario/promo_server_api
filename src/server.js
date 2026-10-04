@@ -79,6 +79,7 @@ function createServer(service, cfg) {
         'GET /api/promos/:id': 'uma oferta',
         'GET /api/promos.csv': 'mesmos filtros, em CSV',
         'GET /api/filtros': 'valores disponíveis para filtros',
+        'GET /api/debug/instantgaming': 'itens crus da 1ª página do IG, para conferir moeda/preço (header X-API-Key)',
         'POST /api/refresh': 'força nova raspagem (header X-API-Key); ?force=1 ignora a validade do cache',
       },
     }),
@@ -112,6 +113,13 @@ function createServer(service, cfg) {
       touch();
       if (!service.hasData()) return noDataResponse(req, res);
       json(req, res, 200, { meta: service.meta(), data: facets(service.items) }, { cache: 'public, max-age=300' });
+    },
+
+    'GET /api/debug/instantgaming': async (req, res) => {
+      if (!cfg.apiKey) return json(req, res, 403, { erro: 'endpoint desativado: defina a variável de ambiente API_KEY' });
+      if (!authorized(req)) return json(req, res, 401, { erro: 'API key ausente ou inválida (header X-API-Key)' });
+      try { json(req, res, 200, await service.debugInstantGaming()); }
+      catch (e) { json(req, res, 502, { erro: e.message }); }
     },
 
     'POST /api/refresh': (req, res, url) => {

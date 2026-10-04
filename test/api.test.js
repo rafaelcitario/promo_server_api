@@ -218,3 +218,10 @@ test('Nuuvem: parser (precisa do cheerio instalado)', { skip: !(() => { try { re
   assert.deepEqual([x.titulo, x.tipo, x.genero, x.preco_brl, x.preco_original_brl, x.desconto_pct, x.link],
     ['Bar', 'DLC', 'RPG', 19.9, 99.9, 80, 'https://www.nuuvem.com/item/bar']);
 });
+
+test('Instant Gaming: pede BRL por parâmetro e cookie', () => {
+  const r = ig.request(2, { headers: { 'User-Agent': 'x' }, cookie: 'a=b', currency: 'BRL' });
+  assert.match(r.url, /currency=BRL/); assert.match(r.url, /page=2/);
+  assert.equal(r.headers.Cookie, 'a=b; currency=BRL');
+  assert.doesNotMatch(ig.request(1, { headers: {}, currency: '' }).url, /currency/);
+});

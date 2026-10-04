@@ -47,11 +47,28 @@ function parse(html, nowIso) {
   return { rows, totalPages: data.nbPages || null };
 }
 
-async function fetchPage(p, ctx) {
-  const qs = [IG_SORT, p > 1 ? 'page=' + p : ''].filter(Boolean).join('&');
+// O IG escolhe a moeda pelo IP do visitante; a partir de um datacenter fora do Brasil ele devolve USD/EUR.
+// Por isso pedimos BRL explicitamente (parâmetro + cookie). Desative com IG_CURRENCY= (vazio).
+function request(p, ctx) {
+  const qs = [IG_SORT, ctx.currency ? 'currency=' + encodeURIComponent(ctx.currency) : '', p > 1 ? 'page=' + p : ''].filter(Boolean).join('&');
   const headers = { ...ctx.headers };
-  if (ctx.cookie) headers.Cookie = ctx.cookie;
-  return parse(await getHTML(`${IG}/pt/pesquisar/?${qs}`, { headers }), ctx.nowIso);
+  const cookies = [ctx.cookie, ctx.currency ? 'currency=' + ctx.currency : ''].filter(Boolean).join('; ');
+  if (cookies) headers.Cookie = cookies;
+  return { url: `${IG}/pt/pesquisar/?${qs}`, headers };
 }
 
-module.exports = { fetchPage, parse, extractJSON };
+async function fetchPage(p, ctx) {
+  const { url, headers } = request(p, ctx);
+  return parse(await getHTML(url, { headers }), ctx.nowIso);
+}
+
+// Diagnóstico: devolve os itens crus da 1ª página, para conferir moeda/preço contra o site.
+async function sample(ctx, n = 3) {
+  const { url, headers } = request(1, ctx);
+  const data = extractJSON(await getHTML(url, { headers }), 'window.searchResults = ');
+  if (!data || !Array.isArray(data.hits)) throw new Error('não encontrei os resultados no HTML (layout mudou?)');
+  return { url, cookie_enviado: headers.Cookie || null, campos_do_resultado: Object.keys(data).filter((k) => k !== 'hits'),
+    campos_do_item: data.hits[0] ? Object.keys(data.hits[0]) : [], itens: data.hits.slice(0, n) };
+}
+
+module.exports = { fetchPage, parse, extractJSON, request, sample };

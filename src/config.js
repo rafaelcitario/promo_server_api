@@ -15,7 +15,7 @@ module.exports = {
   warmOnStart: bool(env.WARM_ON_START, false),
   userAgent: env.USER_AGENT ||
     'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36',
-  ig: { cookie: env.IG_COOKIE || '', conc: int(env.IG_CONCURRENCY, 5), gap: int(env.IG_GAP_MS, 120) },
+  ig: { cookie: env.IG_COOKIE || '', currency: env.IG_CURRENCY ?? 'BRL', conc: int(env.IG_CONCURRENCY, 5), gap: int(env.IG_GAP_MS, 120) },
   nv: { conc: int(env.NV_CONCURRENCY, 2), gap: int(env.NV_GAP_MS, 700) },
   aff: {
     igr: env.AFF_IG ?? 'citario',

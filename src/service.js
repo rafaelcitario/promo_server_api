@@ -107,6 +107,14 @@ class PromoService {
     await this._persist();
   }
 
+  // Diagnóstico do Instant Gaming (usado por GET /api/debug/instantgaming).
+  async debugInstantGaming() {
+    const def = this.defs.instantgaming;
+    const ig = require('./scrapers/instantgaming');
+    return ig.sample({ cookie: def.cookie, currency: def.currency, headers: {
+      'User-Agent': this.cfg.userAgent, 'Accept-Language': 'pt-BR,pt;q=0.9,en;q=0.5', Accept: 'text/html,application/xhtml+xml' } });
+  }
+
   // ---------- consulta ----------
   hasData() { return this.items.length > 0; }
 

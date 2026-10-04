@@ -5,7 +5,7 @@ const { makeLimiter, withRetry } = require('./http');
 // das páginas. Se uma página falhar depois de todas as tentativas, mantém o trecho contínuo já coletado (as páginas
 // iniciais são as de maior desconto) em vez de perder tudo.
 async function scanStore(store, { maxPages, nowIso, headers, onProgress = () => {}, retryDelay }) {
-  const ctx = { nowIso, headers, cookie: store.cookie };
+  const ctx = { nowIso, headers, cookie: store.cookie, currency: store.currency };
   const conc = Math.min(store.maxConc, Math.max(1, store.conc || 1));
   const lim = makeLimiter(conc, store.gap);
   const pages = [];

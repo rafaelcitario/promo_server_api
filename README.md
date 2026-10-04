@@ -80,8 +80,11 @@ npm test
 - **Bloqueio por IP.** Na extensão as requisições saíam do *seu* navegador/IP residencial. No servidor saem de um IP de datacenter,
   e Cloudflare costuma barrar esse tipo de tráfego (HTTP 403 / "Just a moment"). Se acontecer, `/api/status` mostra o erro em
   `lojas.*.ultimo_erro`. Nesse caso teste outra região da Render ou um proxy residencial; não há como contornar só no código.
-- **Moeda do Instant Gaming.** O campo `price_converted` depende da região/cookie da requisição. Na primeira raspagem confira se os
-  preços batem com o site em R$; se não, use `IG_COOKIE` para fixar a moeda.
+- **Moeda do Instant Gaming.** O IG escolhe a moeda pelo IP; de um servidor nos EUA ele devolve USD. A API pede BRL por parâmetro e cookie
+  (`IG_CURRENCY=BRL`), mas isso **precisa ser conferido**: chame `GET /api/debug/instantgaming` (header `X-API-Key`) e compare
+  `price_converted`/`retail`/`discount` dos itens crus com o site. Depois de corrigir, force `POST /api/refresh?force=1`.
+- **Nuuvem 403.** Cloudflare barra IPs de datacenter. Alternativas: proxy residencial (`NODE_USE_ENV_PROXY=1` + `HTTPS_PROXY=...`, Node 22.21+),
+  o feed de produtos do programa de afiliados (Rakuten), ou a extensão enviar os dados raspados do navegador do usuário para a API.
 - **Plano free da Render.** O serviço hiberna após ~15 min sem tráfego e o disco é efêmero: ao acordar, o cache de arquivo some e a
   primeira chamada raspa de novo. Para cache persistente e serviço sempre ativo, use plano pago com disco (`render.yaml`, bloco `disk`).
 - **Histórico de preços e "vale a pena".** O histórico cresce a cada raspagem. Sem disco persistente ele recomeça a cada reinício.
