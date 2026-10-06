@@ -75,6 +75,15 @@ npm test
 `MAX_PAGES` (300), `CACHE_TTL_MINUTES` (30), `RETRY_AFTER_FAIL_MINUTES` (5), `DATA_DIR`, `API_KEY`, `CORS_ORIGINS` (`*`),
 `WARM_ON_START`, `IG_COOKIE`, `IG_CONCURRENCY`/`IG_GAP_MS`, `NV_CONCURRENCY`/`NV_GAP_MS`, `AFF_*`. Veja `.env.example`.
 
+## Lojas
+
+| Loja | Fonte | Observação |
+|---|---|---|
+| Instant Gaming | JSON embutido na busca | moeda BRL pedida por parâmetro/cookie (confira com `/api/debug/instantgaming`) |
+| Epic Games | GraphQL público `store.epicgames.com/graphql` (`onSale: true`, país BR) | preços em centavos já em BRL; ofertas em outra moeda são descartadas; `promo_termina_em` indica o fim da promoção |
+| Nuuvem | HTML (cheerio) | **desligada** (bloqueio 403); reative com `ENABLED_STORES=instantgaming,epic,nuuvem` |
+| GamersGate | não implementada | precisa de amostra da página/feed |
+
 ## Pontos de atenção
 
 - **Bloqueio por IP.** Na extensão as requisições saíam do *seu* navegador/IP residencial. No servidor saem de um IP de datacenter,

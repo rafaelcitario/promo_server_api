@@ -17,6 +17,10 @@ function affLink(r, aff) {
     return `https://click.linksynergy.com/deeplink?id=${encodeURIComponent(aff.nvId)}&mid=${aff.nvMid}` +
       `&murl=${encodeURIComponent(r.link)}&u1=${encodeURIComponent(aff.nvU1)}`;
   }
+  if (r.loja === 'Epic Games') {
+    if (!aff.epicCreator) return r.link;
+    try { const u = new URL(r.link); u.searchParams.set('epic_creator_id', aff.epicCreator); return u.href; } catch { return r.link; }
+  }
   return r.link;
 }
 

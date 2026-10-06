@@ -27,7 +27,7 @@ class PromoService {
   async load() {
     const read = async (f) => { try { return JSON.parse(await fs.readFile(f, 'utf8')); } catch { return null; } };
     const c = await read(this.cacheFile), h = await read(this.histFile);
-    if (c && c.stores) this.state = c.stores;
+    if (c && c.stores) this.state = Object.fromEntries(Object.entries(c.stores).filter(([id]) => this.defs[id]));
     if (h) this.hist = h;
     this._rebuild();
     const n = Object.keys(this.state).length;

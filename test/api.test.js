@@ -225,3 +225,55 @@ test('Instant Gaming: pede BRL por parâmetro e cookie', () => {
   assert.equal(r.headers.Cookie, 'a=b; currency=BRL');
   assert.doesNotMatch(ig.request(1, { headers: {}, currency: '' }).url, /currency/);
 });
+
+const epic = require('../src/scrapers/epic');
+const el = (o) => ({ title: 'Jogo', id: '1', isCodeRedemptionOnly: false, keyImages: [{ type: 'OfferImageTall', url: 'https://img/x.jpg' }],
+  tags: [{ id: '1216' }, { id: '9547' }, { id: '10719' }], categories: [{ path: 'games/edition/base' }], offerMappings: [{ pageSlug: 'jogo-abc123', pageType: 'productHome' }],
+  prePurchase: null, price: { totalPrice: { discountPrice: 1214, originalPrice: 1349, discount: 135, currencyCode: 'BRL', currencyInfo: { decimals: 2 } },
+  lineOffers: [{ appliedRules: [{ endDate: '2026-10-12T16:00:00.000Z' }] }] }, ...o });
+const wrap = (els, total = 7) => ({ data: { Catalog: { searchStore: { elements: els, paging: { count: els.length, total } } } } });
+
+test('Epic: converte centavos, calcula desconto e monta link', () => {
+  const { rows } = epic.parse(wrap([el({})]), 'now');
+  assert.equal(rows.length, 1);
+  const r = rows[0];
+  assert.deepEqual([r.preco_brl, r.preco_original_brl, r.desconto_pct, r.genero, r.plataforma, r.tipo, r.link, r.promo_termina_em],
+    [12.14, 13.49, 10, 'Ação', 'PC / Mac', 'Jogo', 'https://store.epicgames.com/pt-BR/p/jogo-abc123', '2026-10-12T16:00:00.000Z']);
+});
+
+test('Epic: descarta sem desconto, outra moeda, só-código e sem slug; mantém 100% off e DLC', () => {
+  const free = el({ categories: [{ path: 'addons' }], price: { totalPrice: { discountPrice: 0, originalPrice: 3999, currencyCode: 'BRL', currencyInfo: { decimals: 2 } }, lineOffers: [] } });
+  const semDesc = el({ price: { totalPrice: { discountPrice: 2159, originalPrice: 2159, currencyCode: 'BRL', currencyInfo: { decimals: 2 } }, lineOffers: [] } });
+  const usd = el({ price: { totalPrice: { discountPrice: 100, originalPrice: 500, currencyCode: 'USD', currencyInfo: { decimals: 2 } }, lineOffers: [] } });
+  const code = el({ isCodeRedemptionOnly: true });
+  const semSlug = el({ offerMappings: [], catalogNs: { mappings: [] }, productSlug: null, urlSlug: null });
+  const { rows } = epic.parse(wrap([free, semDesc, usd, code, semSlug]), 'now');
+  assert.equal(rows.length, 1);
+  assert.equal(rows[0].desconto_pct, 100); assert.equal(rows[0].tipo, 'DLC');
+});
+
+test('Epic: paginação por offset e erros do GraphQL', () => {
+  assert.equal(epic.body(1, { pageSize: 100 }).variables.start, 0);
+  assert.equal(epic.body(3, { pageSize: 100 }).variables.start, 200);
+  assert.equal(epic.body(1, {}).variables.country, 'BR');
+  assert.throws(() => epic.parse({ errors: [{ message: 'boom' }] }, 'x'), /boom/);
+  assert.throws(() => epic.parse({ data: {} }, 'x'), /searchStore/);
+});
+
+test('Epic: fetchPage calcula totalPages a partir de paging.total (fetch simulado)', async () => {
+  const real = global.fetch;
+  global.fetch = async (url, init) => { assert.match(url, /store\.epicgames\.com\/graphql/); assert.equal(JSON.parse(init.body).variables.onSale, true);
+    return { ok: true, status: 200, headers: { get: () => null }, json: async () => wrap([el({})], 250) }; };
+  try { const r = await epic.fetchPage(1, { pageSize: 100, nowIso: 'x', headers: {} }); assert.equal(r.totalPages, 3); assert.equal(r.rows.length, 1); }
+  finally { global.fetch = real; }
+});
+
+test('stores: ENABLED_STORES liga/desliga lojas e link de afiliado da Epic', () => {
+  const cfg = require('../src/config');
+  const on = require('../src/stores')({ ...cfg, enabledStores: ['epic'] });
+  assert.deepEqual(Object.keys(on), ['epic']);
+  assert.deepEqual(Object.keys(require('../src/stores')(cfg)), ['instantgaming', 'epic']);
+  const { affLink } = require('../src/dataset');
+  assert.equal(affLink({ loja: 'Epic Games', link: 'https://store.epicgames.com/pt-BR/p/x' }, { epicCreator: 'abc' }), 'https://store.epicgames.com/pt-BR/p/x?epic_creator_id=abc');
+  assert.equal(affLink({ loja: 'Epic Games', link: 'https://store.epicgames.com/pt-BR/p/x' }, {}), 'https://store.epicgames.com/pt-BR/p/x');
+});

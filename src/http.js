@@ -28,6 +28,24 @@ async function getHTML(url, { headers = {}, timeoutMs = 30_000 } = {}) {
   return html;
 }
 
+async function postJSON(url, body, { headers = {}, timeoutMs = 30_000 } = {}) {
+  let r;
+  try {
+    r = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json', ...headers },
+      body: JSON.stringify(body), redirect: 'follow', signal: AbortSignal.timeout(timeoutMs) });
+  } catch (e) {
+    const err = new Error(`falha de rede: ${(e.cause && e.cause.code) || e.name || e.message}`);
+    err.network = true; throw err;
+  }
+  if (!r.ok) {
+    const ra = parseFloat(r.headers.get('retry-after'));
+    const e = new HttpError('HTTP ' + r.status, r.status, ra > 0 ? ra : undefined);
+    if (r.status === 403) { e.fatal = true; e.message = 'HTTP 403 (a loja bloqueou o IP do servidor ou pediu verificação anti-bot)'; }
+    throw e;
+  }
+  try { return await r.json(); } catch { const e = new Error('resposta não é JSON (anti-bot?)'); e.fatal = true; throw e; }
+}
+
 // Teto de conexões simultâneas + intervalo mínimo entre pedidos + recuo automático em 429 (respeita Retry-After).
 function makeLimiter(conc, gap) {
   const L = { conc, gap, pauseUntil: 0, nextStart: 0, hits: 0, note: '' };
@@ -63,4 +81,4 @@ async function withRetry(fn, lim, { baseDelay = 1500 } = {}) {
   }
 }
 
-module.exports = { getHTML, makeLimiter, withRetry, HttpError, sleep };
+module.exports = { getHTML, postJSON, makeLimiter, withRetry, HttpError, sleep };
